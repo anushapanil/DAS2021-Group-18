@@ -12,6 +12,7 @@ glimpse(animals)
 # Some initial plots (just for me to check)
 ggplot(animals, aes(x = outcome_type, y = time_at_shelter)) +
   geom_boxplot()
+#how about modity the y axis to make the plot more readable
 
 ggplot(animals, aes(x = time_at_shelter)) +
   geom_histogram()
