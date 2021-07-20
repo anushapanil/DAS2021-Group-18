@@ -1,4 +1,7 @@
-
+library(ggplot2)
+library(dplyr)
+library(gapminder)
+library(skimr)
 library(tidyverse)
 library(GGally)
 library(pscl)
@@ -12,7 +15,6 @@ glimpse(animals)
 # Some initial plots (just for me to check)
 ggplot(animals, aes(x = outcome_type, y = time_at_shelter)) +
   geom_boxplot()
-#how about modity the y axis to make the plot more readable
 
 ggplot(animals, aes(x = time_at_shelter)) +
   geom_histogram()
@@ -21,14 +23,28 @@ ggplot(animals, aes(x = time_at_shelter)) +
 ggpairs(animals)
 
 # First Poisson model - full model
+# we want to counts the day so we use possion
 pmodel <- glm(data = animals, time_at_shelter~., family = poisson)
 
-summary(pmodel)
+# add the table of coeffcients
+coef(summary(pmodel))
+coef.p <- round(coef(summary(pmodel)),2)
+
+table.p <- as.data.frame(coef.p)
+
+write.csv(table.p,file = "table-p.csv")
 
 # Poisson model with only significant variables
 pmodel2 <- glm(data = animals, time_at_shelter~ intake_type + outcome_type + chip_status, family = poisson)
 
 summary(pmodel2)
+
+coef(summary(pmodel2))
+coef.p2 <- round(coef(summary(pmodel2)),2)
+
+table.p2 <- as.data.frame(coef.p2)
+
+write.csv(table.p,file = "table-p2.csv")
 
 
 
