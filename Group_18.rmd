@@ -1,0 +1,284 @@
+---
+title: "Group Project 2"
+author: "Group 18"
+date: "17/07/2021"
+output: 
+  pdf_document:
+    latex_engine: pdflatex
+    number_sections: yes
+    keep_tex: true
+  html_document:
+    df_print: paged
+fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE, comment = NA)
+```
+
+```{r libraries}
+library(moderndive) ; library(tidyverse) ; library(GGally) ; library(skimr) ; library(plotly)
+library(jtools) ; library(kableExtra) ; library(ggfortify) ; library(janitor) ; library(infer)
+library(gridExtra) ; library(olsrr) ; library(data.table) ; library(knitr) ; library(corrplot)
+library(ggcorrplot) ; library(gapminder) ; library(sjPlot) ; library(stats) ; library(jtools)
+library(MASS) ; library(smacof) ; library(broom) ; library(nnet); library(ROCR)
+library(arm) ;  library(ggstance) ; library(effects)
+source(url("http://www.chrisbilder.com/categorical/Chapter5/AllGOFTests.R"))
+library(Rcpp); library(COMPoissonReg)
+```
+
+```{r data}
+animals <- read_csv("dataset18.csv")
+```
+
+# Introduction {#sec:Introduction style="color: darkred"}
+
+# Data Description {#sec:DD style="color: darkred"}
+
+The dataset 18 comes from the data pertaining to the animal admission from the Dallas animal shelter. The variables recorded are as follows:
+
+* `Animal_type` : The type of animal admitted to the shelter
+* `Month` : Month the animal was admitted, recorded numerically with January=1
+* `Year` : Year the animal was admitted to the shelter
+* `Intake_type` : Reason for the animal being admitted to the shelter
+* `Outcome_type` : Final outcome for the admitted animal
+* `Chip_Status` : Did the animal have a microchip with owner information?
+* `Time_at_Shelter` : Days spent at the shelter between being admitted and the final outcome
+
+## Summary {#sec:Summary style="color: darkgreen"}
+
+Summary statistics of the animal shelter data are presented in the following table.
+
+```{r summary, include=FALSE}
+summary(animals)
+head(animals)
+str(animals)
+```
+
+# Formal Analysis:
+
+We are attempting to predict time_at_shelter, so we would require to identify and eliminate any significant outliers, that will potentially affect our model fit.
+
+But firstly, let's have a look at the distribution of data in our response variable, time_at_shelter:
+
+```{r}
+hist(animals$time_at_shelter, breaks=20, xlab="Time at shelter",
+     main="Distribution of time the animal spends in shelter")
+```
+The data is rich in 0s, but that does not mean they are 0-inflated.
+
+Let's also try plotting a correlation plot to observe the correlation between our variables .
+
+## Identifying correlation between variables:
+
+```{r ggpairs}
+ggpairs(animals)
+```
+As we see in the above correlation plot between animal_type and time_at_shelter, there are a few outliers. So let's have a close look at the plot of these two variables and try removing those significant ones.
+
+```{r outliers}
+plot(animals$time_at_shelter, as.factor(animals$animal_type))
+#identify(animals$time_at_shelter, as.factor(animals$animal_type))
+animals <- animals[-c(436,249),]
+```
+## Poisson Model:
+
+We shall now try fitting a Poisson-model to look at the deviance and degrees of freedom.
+
+```{r poisson_model_full}
+poisson_model_full <- glm(data = animals, time_at_shelter ~ chip_status + year + month +
+                       outcome_type + intake_type + animal_type, family = poisson)
+summary(poisson_model_full)
+```
+
+By observing the above Poisson model summary, we find that the p-values of the predictors namely, year, month and animal_type are much greater than 0.05 , implying that they are highly insignificant. So, we shall now discard these three variables.
+
+```{r poisson_model}
+poisson_model <- glm(data = animals, time_at_shelter ~ chip_status +
+                       outcome_type + intake_type, family = poisson)
+summary(poisson_model)
+
+```
+After removing the insignificant predictors, the p-values of all the other predictors seem to be good.
+
+We also find that for the Poisson model, D = 6111.3 and $\chi^2$(1124) = 1203.108, indicating a poor fit if Poisson is the correct model for the response.
+
+Now, let's look for overdispersion;
+
+### Overdispersion
+
+```{r plot_overdispersion}
+ggplot(poisson_model, aes(x=log(fitted(poisson_model)),
+                          y=log((animals$time_at_shelter-fitted(poisson_model))^2))) +
+  geom_jitter(col="#2A638B", width = 0.2, height = 0.2) +
+  geom_abline(slope=1, intercept=0, col="#EB442C", size=1) + 
+  ylab(expression((y-hat(mu))^2)) + xlab(expression(hat(mu)))
+```
+The data spread is not equal around the red line, which clearly indicates the problem of overdispersion.
+
+### Pearson and Chi-squared Statistics:
+
+Let's also try comparing the Pearson and Chi-squared statistics.
+
+```{r poisson_model_fit}
+chisq_poisson <- sum(resid(poisson_model,type="pearson")^2)
+#Comparing Pearson Residual with the Chi-squared statistic
+chisq_poisson < qchisq(p=0.95, df=poisson_model$df.residual) 
+#Not a good fit - False
+```
+As we can see from the above results, the Pearson Residual is higher than the chi-squared statistic, which also implies that the model suffers from overdispersion.
+
+One of the consequences of overdispersion is the standard deviation of parameter estimates downward biased and significance of predictor variables upward biased, which in turn can lead to invalid conclusions. If the problem of overdispersion occurs in in Poisson regression, the resulted model will be less accurate, leading to underestimated (lower than the true value) standard error of parameter estimation and therefore invalid conclusions. 
+
+The first two plots below are normal probability plots, and we are using them here to spot any points that don't follow the straight line. We can also plot the deviance (or Pearson) residuals against the linear predictor to look for non-linearity in the relationship between the fitted values and the residuals as shown in the third panel below. There is no obvious pattern here.
+
+### Residual Plots:
+
+```{r poisson_residual_plots}
+resp <- resid(poisson_model, type = "pearson")
+resd <- resid(poisson_model, type = "deviance")
+
+p1<- ggplot(poisson_model, aes(sample = resp)) + geom_point(stat = "qq", color = "#2A638B") +
+ylab("Pearson residuals")
+p2<- ggplot(poisson_model, aes(sample = resd)) + geom_point(stat = "qq", color = "#2A638B") +
+ylab("Deviance residuals")
+p3<- ggplot(poisson_model, aes(x = predict(poisson_model, type="link"), y =resd))+
+geom_jitter(col = "#2A638B", width = 0.2, height = 0.2) +
+ylab("Deviance residuals") + xlab("Linear predictor")
+
+grid.arrange(p1, p2, p3, nrow = 1)
+```
+
+To deal with the problem of overdispersion, let's try fitting the Quasi-Poisson model which will account for the greater variance in the data. 
+
+## Quasi Poisson Model:
+
+```{r quasi_poisson_model}
+q_poisson_model <- glm(time_at_shelter ~ chip_status +
+                       outcome_type + intake_type, data = animals, family = quasipoisson)
+summary(q_poisson_model)
+```
+In the case of count data, we can also try fitting an alternate model called Negative Binomial and then choose the best fit for our data.
+
+## Negative Binomial Model:
+
+```{r negative_binomial_model}
+n_binomial_model <- glm.nb(time_at_shelter~ chip_status +
+                       outcome_type + intake_type, data = animals)
+summary(n_binomial_model)
+```
+
+# Model Comparisons:
+
+Let's compare the deviances and AIC scores of the Quasi-Poisson and Negative Binomial models:
+
+```{r model_comparisons}
+c(q_poisson_model$deviance, q_poisson_model$aic)
+c(n_binomial_model$deviance, n_binomial_model$aic)
+
+D <- n_binomial_model$deviance
+chi_sq <- qchisq(p = 0.95, df = 1124)
+
+c("Deviance" = D, "Chi_Sq" = chi_sq) %>%
+  kable(col.names = "values") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+The deviance is much smaller for the Negative Binomial model, so we shall prefer fitting the Negative Binomial model over the Quasi Poisson model.
+
+# Model Selection:
+
+Let's first have a look at the model summary of the Negative Binomial model:
+
+```{r negative_binomial_model_summary}
+summ(n_binomial_model)
+```
+After analysis of the results, we conclude that the Negative Binomial model provides a better description of the data than the over-dispersed Poisson and the Quasi Poisson model.
+
+So now that we have chosen our best fit model, let’s calculate the impact on the time spent by the animals at the shelter with respect to the different predictors. At first we shall take the exponential of the coefficients.
+
+```{r coefficients}
+coeffs <- exp(coef(n_binomial_model))
+coeffs
+```
+Now, we shall calculate the 95% confidence interval (upper and lower confidence limits) for exponentiated coefficients as follows:
+
+```{r confidence_interval}
+ci <- exp(confint.default(n_binomial_model))
+ci
+```
+
+We shall now look at how the model predicts the values:
+
+```{r predictions}
+predict(n_binomial_model, type="response")
+```
+
+#Model Equations
+
+The log of the expected outcome for our Negative Binomial regression model is predicted with a linear combination of the predictors that contributes towards it. So, the model equation can be written in the following form:
+
+$$\widehat{time~at~shelter} ~=~ 44.812 ~+~ 0.804~\cdot~ I_{ScanNoChip}~ (i) ~+~ 0.448 ~\cdot~ I_{UnableToScan}~ (i) ~+~
+0.630 ~\cdot~ I_{Died}~ (j) ~+~ \\
+0.524 ~\cdot~ I_{Euthanized}~ (j) ~+~ 0.555 ~\cdot~ I_{Foster}~ (j) ~+~ 0.158 ~\cdot~ I_{ReturnedToOwner}~ (j) ~+~ 0.165 ~\cdot~ I_{OwnerSurrender}~ (k) ~+~ 0.269 ~\cdot~ I_{Stray}~ (k)$$
+
+$$I_{\mbox{ScanNoChip}}(i) = \left\{
+\begin{array}{ll}
+1~~\mbox{if position of}~ith~\mbox{observation is ScanNoChip},\\
+0~~\mbox{Otherwise}.\\
+\end{array}
+\right.$$
+$$I_{\mbox{UnableToScan}}(i) = \left\{
+\begin{array}{ll}
+1~~\mbox{if position of}~ith~\mbox{observation is UnableToScan},\\
+0~~\mbox{Otherwise}.\\
+\end{array}
+\right.$$
+
+$$I_{\mbox{Died}}(j) = \left\{
+\begin{array}{ll}
+1~~\mbox{if position of}~jth~\mbox{observation is Died},\\
+0~~\mbox{Otherwise}.\\
+\end{array}
+\right.$$
+
+$$I_{\mbox{Euthanized}}(j) = \left\{
+\begin{array}{ll}
+1~~\mbox{if position of}~jth~\mbox{observation is Euthanized},\\
+0~~\mbox{Otherwise}.\\
+\end{array}
+\right.$$
+
+$$I_{\mbox{Foster}}(j) = \left\{
+\begin{array}{ll}
+1~~\mbox{if position of}~jth~\mbox{observation is Foster},\\
+0~~\mbox{Otherwise}.\\
+\end{array}
+\right.$$
+
+$$I_{\mbox{ReturnedToOwner}}(j) = \left\{
+\begin{array}{ll}
+1~~\mbox{if position of}~jth~\mbox{observation is ReturnedToOwner},\\
+0~~\mbox{Otherwise}.\\
+\end{array}
+\right.$$
+
+$$I_{\mbox{OwnerSurrender}}(j) = \left\{
+\begin{array}{ll}
+1~~\mbox{if position of}~jth~\mbox{observation is OwnerSurrender},\\
+0~~\mbox{Otherwise}.\\
+\end{array}
+\right.$$
+
+$$I_{\mbox{Stray}}(j) = \left\{
+\begin{array}{ll}
+1~~\mbox{if position of}~jth~\mbox{observation is Stray},\\
+0~~\mbox{Otherwise}.\\
+\end{array}
+\right.$$
+
+# Conclusions {#sec:Conc}
+
+
+
+
