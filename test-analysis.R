@@ -25,7 +25,7 @@ ggpairs(animals)
 # First Poisson model - full model
 # we want to counts the day so we use possion
 pmodel <- glm(data = animals, time_at_shelter~., family = poisson)
-
+  
 # add the table of coeffcients
 coef(summary(pmodel))
 coef.p <- round(coef(summary(pmodel)),2)
