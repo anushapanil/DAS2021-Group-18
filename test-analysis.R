@@ -12,6 +12,7 @@ animals <- read_csv("dataset18.csv")
 head(animals)
 glimpse(animals)
 
+animals <- animals[-c(436,249),]
 # Some initial plots (just for me to check)
 ggplot(animals, aes(x = outcome_type, y = time_at_shelter)) +
   geom_boxplot()
@@ -19,13 +20,14 @@ ggplot(animals, aes(x = outcome_type, y = time_at_shelter)) +
 ggplot(animals, aes(x = time_at_shelter)) +
   geom_histogram()
 
-
+factor(animals$chip_status)
+factor(animals$intake_type)
 ggpairs(animals)
 
 # First Poisson model - full model
 # we want to counts the day so we use possion
-pmodel <- glm(data = animals, time_at_shelter~., family = poisson)
-  
+pmodel <- glm(data = animals, time_at_shelter ~ ., family = poisson)
+head(pmodel)
 # add the table of coeffcients
 coef(summary(pmodel))
 coef.p <- round(coef(summary(pmodel)),2)
@@ -44,9 +46,13 @@ coef.p2 <- round(coef(summary(pmodel2)),2)
 
 table.p2 <- as.data.frame(coef.p2)
 
-write.csv(table.p,file = "table-p2.csv")
+write.csv(table.p2,file = "table-p2.csv")
 
-
+ggplot(poisson_model, aes(x=log(fitted(poisson_model)),
+                          y=log((animals$time_at_shelter-fitted(poisson_model))^2))) +
+  geom_jitter(col="#2A638B", width = 0.2, height = 0.2) +
+  geom_abline(slope=1, intercept=0, col="#EB442C", size=1) + 
+  ylab(expression((y-hat(mu))^2)) + xlab(expression(hat(mu)))
 
 
 nrow(animals)
