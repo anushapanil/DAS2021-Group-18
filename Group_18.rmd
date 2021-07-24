@@ -263,16 +263,16 @@ $$I_{\mbox{ReturnedToOwner}}(j) = \left\{
 \end{array}
 \right.$$
 
-$$I_{\mbox{OwnerSurrender}}(j) = \left\{
+$$I_{\mbox{OwnerSurrender}}(k) = \left\{
 \begin{array}{ll}
-1~~\mbox{if position of}~jth~\mbox{observation is OwnerSurrender},\\
+1~~\mbox{if position of}~kth~\mbox{observation is OwnerSurrender},\\
 0~~\mbox{Otherwise}.\\
 \end{array}
 \right.$$
 
-$$I_{\mbox{Stray}}(j) = \left\{
+$$I_{\mbox{Stray}}(k) = \left\{
 \begin{array}{ll}
-1~~\mbox{if position of}~jth~\mbox{observation is Stray},\\
+1~~\mbox{if position of}~kth~\mbox{observation is Stray},\\
 0~~\mbox{Otherwise}.\\
 \end{array}
 \right.$$
