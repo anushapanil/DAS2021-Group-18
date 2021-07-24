@@ -11,9 +11,9 @@ output:
     df_print: paged
 fig_caption: yes
 ---
-
+knitr::opts_chunk$set(tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE, comment = NA)
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE, comment = NA, tidy.opts = list(width.cutoff = 60), tidy = TRUE)
 ```
 
 ```{r libraries}
