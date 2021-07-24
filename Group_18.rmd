@@ -218,7 +218,7 @@ predict(n_binomial_model, type="response")
 
 The log of the expected outcome for our Negative Binomial regression model is predicted with a linear combination of the predictors that contributes towards it. So, the model equation can be written in the following form:
 
-$$\widehat{time~at~shelter} ~=~ 44.812 ~+~ 0.804~\cdot~ I_{ScanNoChip}~ (i) ~+~ 0.448 ~\cdot~ I_{UnableToScan}~ (i) ~+~
+$$ \widehat{time~at~shelter}(i) ~=~ 44.812 ~+~ 0.804~\cdot~ I_{ScanNoChip}~ (i) ~+~ 0.448 ~\cdot~ I_{UnableToScan}~ (i) ~+~
 0.630 ~\cdot~ I_{Died}~ (i) ~+~ \\
 0.524 ~\cdot~ I_{Euthanized}~ (i) ~+~ 0.555 ~\cdot~ I_{Foster}~ (i) ~+~ 0.158 ~\cdot~ I_{ReturnedToOwner}~ (i) ~+~ 0.165 ~\cdot~ I_{OwnerSurrender}~ (i) ~+~ 0.269 ~\cdot~ I_{Stray}~ (i)$$
 
