@@ -277,8 +277,14 @@ $$I_{\mbox{Stray}}(i) = \left\{
 \end{array}
 \right.$$
 
-# Conclusions {#sec:Conc}
+# Conclusions & Extended and Further work {#sec:Conc}
+Based on the above analysis, the negative binomial distribution model is currently selected as the prediction model. Because it has lower deviation than the basic Poisson distribution model and quasi-Poisson distribution model. This is also a better model that can be selected on the basis of GLM.
 
+Data and features determine the upper limit of machine learning, and models and algorithms are approaching this upper limit. So first of all, in the future work, based on the existing analysis, we will do further feature engineering on the data. Improve the online model fitting effect.
+
+Secondly, the accuracy of the model can be improved by expanding the data set, making the model closer to the truth.
+
+Finally, this article has less research on whether there is zero inflation in data, and future work can move closer to this aspect. And try some other models for fitting, such as zero inflated count model, zero-inflated poisson and zero-inflated negative binomial.
 
 
 
