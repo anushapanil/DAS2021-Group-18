@@ -173,7 +173,7 @@ summary(n_binomial_model)
 Let's compare the deviances and AIC scores of the Quasi-Poisson and Negative Binomial models:
 
 ```{r model_comparisons}
-c(q_poisson_model$deviance, q_poisson_model$aic)
+c(q_poisson_model$deviance, q_poisson_model$deviance)
 c(n_binomial_model$deviance, n_binomial_model$aic)
 
 D <- n_binomial_model$deviance
